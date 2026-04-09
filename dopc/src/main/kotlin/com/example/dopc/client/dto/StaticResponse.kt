@@ -15,9 +15,9 @@ import com.fasterxml.jackson.annotation.JsonProperty
 // @JsonProperty("venue_raw") is used to say that JSON property name is "venue_raw"
 data class StaticResponse(@JsonProperty("venue_raw") val venueRaw: VenueRawStatic)
 
-data class VenueRawStatic(val location: Location)
+data class VenueRawStatic(@JsonProperty("location") val location: Location)
 
 data class Location(
         // [longitude, latitude]
-        val coordinates: List<Double>
+        @JsonProperty("coordinates") val coordinates: List<Double>
 )

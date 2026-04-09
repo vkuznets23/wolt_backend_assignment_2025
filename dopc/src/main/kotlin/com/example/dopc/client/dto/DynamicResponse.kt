@@ -14,6 +14,7 @@ import com.fasterxml.jackson.annotation.JsonProperty
 *        "distance_ranges": [
 *          {
 *            "max": 500,
+*            "min": 0,
 *            "a": 0,
              "b": 0,
              "flag": null
@@ -26,13 +27,16 @@ import com.fasterxml.jackson.annotation.JsonProperty
 
 data class DynamicResponse(@JsonProperty("venue_raw") val venueRaw: VenueRawDynamic)
 
-data class VenueRawDynamic(val delivery_specs: DeliverySpecs)
+data class VenueRawDynamic(@JsonProperty("delivery_specs") val deliverySpecs: DeliverySpecs)
 
 data class DeliverySpecs(
-        val order_minimum_no_surcharge: Int,
-        val delivery_pricing: DeliveryPricing
+        @JsonProperty("order_minimum_no_surcharge") val orderMinimumNoSurcharge: Int,
+        @JsonProperty("delivery_pricing") val deliveryPricing: DeliveryPricing
 )
 
-data class DeliveryPricing(val base_price: Int, val distance_ranges: List<DistanceRange>)
+data class DeliveryPricing(
+        @JsonProperty("base_price") val basePrice: Int,
+        @JsonProperty("distance_ranges") val distanceRanges: List<DistanceRange>
+)
 
-data class DistanceRange(val max: Int, val a: Int, val b: Int, val flag: String?)
+data class DistanceRange(val max: Int, val min: Int, val a: Int, val b: Int, val flag: String?)

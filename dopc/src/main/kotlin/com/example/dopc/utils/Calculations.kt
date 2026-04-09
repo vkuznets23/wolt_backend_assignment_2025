@@ -1,5 +1,6 @@
 package com.example.dopc.utils
 
+import com.example.dopc.client.dto.DistanceRange
 import kotlin.math.*
 
 fun calculateSmallOrderSurcharge(
@@ -8,8 +9,6 @@ fun calculateSmallOrderSurcharge(
 ): Int {
     return max(0, orderMinimumNoSurcharge - cartValue)
 }
-
-data class DistanceRange(val min: Int, val max: Int, val a: Int, val b: Int)
 
 // fee = base_price + a + round(b * distance / 10)
 fun calculateDeliveryFee(basePrice: Int, distance: Int, distanceRanges: List<DistanceRange>): Int? {
@@ -36,7 +35,7 @@ fun calculateDistance(userLat: Double, userLon: Double, venueLat: Double, venueL
 
     val c = 2 * atan2(sqrt(a), sqrt(1 - a))
 
-    return (earthRadius * c).toInt()
+    return (earthRadius * c).roundToInt()
 }
 
 fun calculateTotalPrice(cartValue: Int, surcharge: Int, deliveryFee: Int): Int {
