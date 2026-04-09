@@ -1,6 +1,7 @@
 package com.example.dopc
 
 import com.example.dopc.client.HomeAssignmentApiClient
+import com.example.dopc.client.dto.DynamicResponse
 import com.example.dopc.client.dto.StaticResponse
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -19,5 +20,10 @@ class HealthController(private val homeAssignmentApiClient: HomeAssignmentApiCli
     @GetMapping("/venue/{slug}/static")
     fun getVenueStatic(@PathVariable slug: String): StaticResponse {
         return homeAssignmentApiClient.fetchStatic(venueSlug = slug)
+    }
+
+    @GetMapping("/venue/{slug}/dynamic")
+    fun getVenueDynamic(@PathVariable slug: String): DynamicResponse {
+        return homeAssignmentApiClient.fetchDynamic(venueSlug = slug)
     }
 }

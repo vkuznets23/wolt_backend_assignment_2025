@@ -1,5 +1,6 @@
 package com.example.dopc.client
 
+import com.example.dopc.client.dto.DynamicResponse
 import com.example.dopc.client.dto.StaticResponse
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestClient
@@ -16,8 +17,17 @@ class HomeAssignmentApiClient(builder: RestClient.Builder) {
         return webClient
                 .get()
                 .uri("/venues/{slug}/static", venueSlug)
+                .retrieve() // send request and get response
+                .body(StaticResponse::class.java) // convert response to StaticResponse object
+         ?: throw IllegalStateException("Empty static response")
+    }
+
+    fun fetchDynamic(venueSlug: String): DynamicResponse {
+        return webClient
+                .get()
+                .uri("/venues/{slug}/dynamic", venueSlug)
                 .retrieve()
-                .body(StaticResponse::class.java)
-                ?: throw IllegalStateException("Empty static response")
+                .body(DynamicResponse::class.java)
+                ?: throw IllegalStateException("Empty dynamic response")
     }
 }
