@@ -1,11 +1,10 @@
 package com.example.dopc
 
+import com.example.dopc.api.DeliveryOrderPriceResponse
 import com.example.dopc.api.DeliveryOrderPriceService
 import com.example.dopc.client.HomeAssignmentApiClient
-import com.example.dopc.client.dto.DynamicResponse
-import com.example.dopc.client.dto.StaticResponse
 import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
@@ -21,13 +20,18 @@ class HealthController(
         return "OK"
     }
 
-    @GetMapping("/api/v1/venue/{slug}/static")
-    fun venueStatic(@PathVariable slug: String): StaticResponse {
-        return homeAssignmentApiClient.fetchStatic(slug)
-    }
-
-    @GetMapping("/api/v1/venue/{slug}/dynamic")
-    fun venueDynamic(@PathVariable slug: String): DynamicResponse {
-        return homeAssignmentApiClient.fetchDynamic(slug)
+    @GetMapping("/api/v1/delivery-order-price")
+    fun deliveryOrderPrice(
+            @RequestParam("venue_slug") venueSlug: String,
+            @RequestParam("cart_value") cartValue: Int,
+            @RequestParam("user_lat") userLat: Double,
+            @RequestParam("user_lon") userLon: Double,
+    ): DeliveryOrderPriceResponse {
+        return deliveryOrderPriceService.getDeliveryOrderPrice(
+                venueSlug,
+                cartValue,
+                userLat,
+                userLon
+        )
     }
 }
