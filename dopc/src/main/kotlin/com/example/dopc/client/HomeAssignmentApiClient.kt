@@ -38,11 +38,24 @@ class HomeAssignmentApiClient(builder: RestClient.Builder) {
     }
 
     fun fetchDynamic(venueSlug: String): DynamicResponse {
-        return webClient
-                .get()
-                .uri("/venues/{slug}/dynamic", venueSlug)
-                .retrieve()
-                .body(DynamicResponse::class.java)
-                ?: throw IllegalStateException("Empty dynamic response")
+        try {
+            return webClient
+                    .get()
+                    .uri("/venues/{slug}/dynamic", venueSlug)
+                    .retrieve()
+                    .body(DynamicResponse::class.java)
+                    ?: throw ResponseStatusException(
+                            HttpStatus.BAD_GATEWAY,
+                            "Empty dynamic response"
+                    )
+        } catch (e: HttpClientErrorException.NotFound) {
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "Venue not found: $venueSlug")
+        } catch (e: HttpClientErrorException) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Upstream rejected request")
+        } catch (e: HttpServerErrorException) {
+            throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Upstream service error")
+        } catch (e: ResourceAccessException) {
+            throw ResponseStatusException(HttpStatus.GATEWAY_TIMEOUT, "Upstream timeout")
+        }
     }
 }

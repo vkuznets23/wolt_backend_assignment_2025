@@ -23,3 +23,5 @@ Server starts on: http://localhost:8080
 
 `GET` / -> DOPC API is running
 `GET` /health -> OK
+`GET` /venue/home-assignment-venue-stockholm/static -> show static data fetched from external API
+`GET` /venue/home-assignment-venue-stockholm/dynamic -> show dynamic data fetched from external API
