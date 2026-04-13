@@ -1,10 +1,13 @@
 package com.example.dopc.api
 
+import com.example.dopc.api.dto.DeliveryInfo
+import com.example.dopc.api.dto.DeliveryOrderPriceResponse
 import com.example.dopc.client.HomeAssignmentApiClient
 import com.example.dopc.utils.calculateDeliveryFee
 import com.example.dopc.utils.calculateDistance
 import com.example.dopc.utils.calculateSmallOrderSurcharge
 import com.example.dopc.utils.calculateTotalPrice
+import com.example.dopc.utils.validateInput
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
@@ -18,26 +21,10 @@ class DeliveryOrderPriceService(private val homeAssignmentApiClient: HomeAssignm
             userLat: Double,
             userLon: Double,
     ): DeliveryOrderPriceResponse {
-        // validate input parameters
-        if (venueSlug.isEmpty()) {
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "venue_slug is required")
+        val validationError = validateInput(venueSlug, cartValue, userLat, userLon)
+        if (validationError != null) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, validationError)
         }
-        if (cartValue < 0) {
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "cart_value must be >= 0")
-        }
-        if (userLat !in -90.0..90.0) {
-            throw ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "user_lat must be between -90 and 90"
-            )
-        }
-        if (userLon !in -180.0..180.0) {
-            throw ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "user_lon must be between -180 and 180"
-            )
-        }
-        //
 
         val static = homeAssignmentApiClient.fetchStatic(venueSlug)
         val dynamic = homeAssignmentApiClient.fetchDynamic(venueSlug)
@@ -45,7 +32,7 @@ class DeliveryOrderPriceService(private val homeAssignmentApiClient: HomeAssignm
         val coordinates = static.venueRaw.location.coordinates
         if (coordinates.size != 2) {
             throw ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
+                    HttpStatus.BAD_GATEWAY,
                     "Invalid venue coordinates format from upstream API"
             )
         }
