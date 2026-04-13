@@ -1,5 +1,6 @@
 package com.example.dopc.utils
 
+import com.example.dopc.client.dto.DistanceRange
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -24,9 +25,9 @@ class CalculationsTest {
     fun `fee calculated correctly for first range`() {
         val ranges =
                 listOf(
-                        DistanceRange(0, 500, 0, 0),
-                        DistanceRange(500, 1000, 100, 1),
-                        DistanceRange(1000, 0, 0, 0)
+                        DistanceRange(min = 0, max = 500, a = 0, b = 0, flag = null),
+                        DistanceRange(min = 500, max = 1000, a = 100, b = 1, flag = null),
+                        DistanceRange(min = 1000, max = 0, a = 0, b = 0, flag = null)
                 )
         // 199 + 0 + round(0 * 300 / 10) = 199
         assertEquals(
@@ -39,9 +40,9 @@ class CalculationsTest {
     fun `fee calculated correctly for second range`() {
         val ranges =
                 listOf(
-                        DistanceRange(0, 500, 0, 0),
-                        DistanceRange(500, 1000, 100, 1),
-                        DistanceRange(1000, 0, 0, 0)
+                        DistanceRange(min = 0, max = 500, a = 0, b = 0, flag = null),
+                        DistanceRange(min = 500, max = 1000, a = 100, b = 1, flag = null),
+                        DistanceRange(min = 1000, max = 0, a = 0, b = 0, flag = null)
                 )
         // 199 + 100 + round(1 * 600 / 10) = 359
         assertEquals(
@@ -54,9 +55,9 @@ class CalculationsTest {
     fun `returns null when delivery not possible`() {
         val ranges =
                 listOf(
-                        DistanceRange(0, 500, 0, 0),
-                        DistanceRange(500, 1000, 100, 1),
-                        DistanceRange(1000, 0, 0, 0)
+                        DistanceRange(min = 0, max = 500, a = 0, b = 0, flag = null),
+                        DistanceRange(min = 500, max = 1000, a = 100, b = 1, flag = null),
+                        DistanceRange(min = 1000, max = 0, a = 0, b = 0, flag = null)
                 )
         assertEquals(
                 null,
@@ -100,9 +101,9 @@ class CalculationsTest {
     fun `delivery fee includes lower bound distance in range`() {
         val ranges =
                 listOf(
-                        DistanceRange(0, 500, 0, 0),
-                        DistanceRange(500, 1000, 100, 1),
-                        DistanceRange(1000, 0, 0, 0)
+                        DistanceRange(min = 0, max = 500, a = 0, b = 0, flag = null),
+                        DistanceRange(min = 500, max = 1000, a = 100, b = 1, flag = null),
+                        DistanceRange(min = 1000, max = 0, a = 0, b = 0, flag = null)
                 )
 
         // distance == min of second range (500) => second range should be selected
@@ -115,7 +116,11 @@ class CalculationsTest {
 
     @Test
     fun `delivery fee rounds b times distance over ten with half up`() {
-        val ranges = listOf(DistanceRange(0, 1000, 0, 1), DistanceRange(1000, 0, 0, 0))
+        val ranges =
+                listOf(
+                        DistanceRange(min = 0, max = 1000, a = 0, b = 1, flag = null),
+                        DistanceRange(min = 1000, max = 0, a = 0, b = 0, flag = null)
+                )
 
         // b * distance / 10 = 1 * 35 / 10 = 3.5 => round(3.5) = 4
         // fee = 199 + 0 + 4 = 203
@@ -137,9 +142,9 @@ class CalculationsTest {
     fun `delivery fee is null when distance falls into gap between ranges`() {
         val ranges =
                 listOf(
-                        DistanceRange(0, 500, 0, 0),
-                        DistanceRange(700, 1000, 100, 1),
-                        DistanceRange(1000, 0, 0, 0)
+                        DistanceRange(min = 0, max = 500, a = 0, b = 0, flag = null),
+                        DistanceRange(min = 700, max = 1000, a = 100, b = 1, flag = null),
+                        DistanceRange(min = 1000, max = 0, a = 0, b = 0, flag = null)
                 )
 
         // 600 is not covered by any range
@@ -153,9 +158,9 @@ class CalculationsTest {
     fun `delivery fee is null for open ended range marker when distance above 1000`() {
         val ranges =
                 listOf(
-                        DistanceRange(0, 500, 0, 0),
-                        DistanceRange(500, 1000, 100, 1),
-                        DistanceRange(1000, 0, 0, 0)
+                        DistanceRange(min = 0, max = 500, a = 0, b = 0, flag = null),
+                        DistanceRange(min = 500, max = 1000, a = 100, b = 1, flag = null),
+                        DistanceRange(min = 1000, max = 0, a = 0, b = 0, flag = null)
                 )
 
         // By current implementation, max == 0 acts as "not deliverable"
