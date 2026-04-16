@@ -1,13 +1,12 @@
-package com.example.dopc.api
+package com.example.dopc.service
 
-import com.example.dopc.api.dto.DeliveryInfo
-import com.example.dopc.api.dto.DeliveryOrderPriceResponse
+import com.example.dopc.service.dto.DeliveryInfo
+import com.example.dopc.service.dto.DeliveryOrderPriceResponse
 import com.example.dopc.client.HomeAssignmentClient
 import com.example.dopc.utils.calculateDeliveryFee
 import com.example.dopc.utils.calculateDistance
 import com.example.dopc.utils.calculateSmallOrderSurcharge
 import com.example.dopc.utils.calculateTotalPrice
-import com.example.dopc.utils.validateInput
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException

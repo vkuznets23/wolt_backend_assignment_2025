@@ -1,4 +1,4 @@
-package com.example.dopc.api.dto
+package com.example.dopc.service.dto
 
 import com.fasterxml.jackson.annotation.JsonProperty
 

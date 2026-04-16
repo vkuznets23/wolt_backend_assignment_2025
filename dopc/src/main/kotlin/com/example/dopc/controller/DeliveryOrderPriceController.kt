@@ -1,8 +1,8 @@
 package com.example.dopc.controller
 
-import com.example.dopc.server.ValidationService
-import com.example.dopc.api.DeliveryOrderPriceService
-import com.example.dopc.api.dto.DeliveryOrderPriceResponse
+import com.example.dopc.service.ValidationService
+import com.example.dopc.service.DeliveryOrderPriceService
+import com.example.dopc.service.dto.DeliveryOrderPriceResponse
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
