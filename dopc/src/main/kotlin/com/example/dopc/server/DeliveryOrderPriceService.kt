@@ -2,7 +2,7 @@ package com.example.dopc.api
 
 import com.example.dopc.api.dto.DeliveryInfo
 import com.example.dopc.api.dto.DeliveryOrderPriceResponse
-import com.example.dopc.client.HomeAssignmentApiClient
+import com.example.dopc.client.HomeAssignmentClient
 import com.example.dopc.utils.calculateDeliveryFee
 import com.example.dopc.utils.calculateDistance
 import com.example.dopc.utils.calculateSmallOrderSurcharge
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
 
 @Service
-class DeliveryOrderPriceService(private val homeAssignmentApiClient: HomeAssignmentApiClient) {
+class DeliveryOrderPriceService(private val homeAssignmentClient: HomeAssignmentClient) {
 
     fun getDeliveryOrderPrice(
             venueSlug: String,
@@ -21,13 +21,8 @@ class DeliveryOrderPriceService(private val homeAssignmentApiClient: HomeAssignm
             userLat: Double,
             userLon: Double,
     ): DeliveryOrderPriceResponse {
-        val validationError = validateInput(venueSlug, cartValue, userLat, userLon)
-        if (validationError != null) {
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST, validationError)
-        }
-
-        val static = homeAssignmentApiClient.fetchStatic(venueSlug)
-        val dynamic = homeAssignmentApiClient.fetchDynamic(venueSlug)
+        val static = homeAssignmentClient.fetchStatic(venueSlug)
+        val dynamic = homeAssignmentClient.fetchDynamic(venueSlug)
 
         val coordinates = static.venueRaw.location.coordinates
         if (coordinates.size != 2) {

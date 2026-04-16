@@ -11,13 +11,13 @@ import org.springframework.web.client.RestClient
 import org.springframework.web.server.ResponseStatusException
 
 @Service
-class HomeAssignmentApiClient(builder: RestClient.Builder) {
+class HomeAssignmentClient(builder: RestClient.Builder) {
     private val webClient =
             builder.baseUrl(
                             "https://consumer-api.development.dev.woltapi.com/home-assignment-api/v1"
                     )
                     .build()
-
+    
     fun fetchStatic(venueSlug: String): StaticResponse {
         try {
             return webClient
