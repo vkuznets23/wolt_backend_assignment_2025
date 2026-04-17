@@ -8,6 +8,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.server.ResponseStatusException
+import org.springframework.web.bind.MissingServletRequestParameterException
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import java.time.LocalDateTime
 import org.slf4j.LoggerFactory  
 
@@ -33,6 +35,39 @@ class GlobalExceptionHandler {
         )
         return ResponseEntity.status(status).body(body)
     }
+
+    @ExceptionHandler(MissingServletRequestParameterException::class)
+    fun handleMissingParam(
+        ex: MissingServletRequestParameterException,
+        request: HttpServletRequest
+    ): ResponseEntity<ErrorResponse> { 
+        val status = HttpStatus.BAD_REQUEST
+        log.error("[ERROR HANDLER] MissingServletRequestParameterException: ${ex.message}", ex)
+        val body = ErrorResponse(
+            code = "VALIDATION_ERROR",
+            message = ex.message ?: "Validation failed",
+            status = HttpStatus.BAD_REQUEST.value(),
+            path = request.requestURI,
+            timestamp = LocalDateTime.now()
+        )
+        return ResponseEntity.badRequest().body(body)
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException::class)
+    fun handleTypeMismatch(
+        ex: MethodArgumentTypeMismatchException,
+        request: HttpServletRequest
+    ): ResponseEntity<ErrorResponse> { 
+        val status = HttpStatus.BAD_REQUEST
+        log.error("[ERROR HANDLER] MethodArgumentTypeMismatchException: ${ex.message}", ex)
+        val body = ErrorResponse(
+            code = "VALIDATION_ERROR",
+            message = ex.message ?: "Validation failed",
+            status = HttpStatus.BAD_REQUEST.value(),
+            path = request.requestURI,
+            timestamp = LocalDateTime.now()
+        )
+        return ResponseEntity.status(status).body(body) }
 
     // when there is bean validation error (@Valid @NotBlank, @Min, @Max, etc.)
     // takes first error message and return status code and body
