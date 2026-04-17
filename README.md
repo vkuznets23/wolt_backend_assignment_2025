@@ -59,10 +59,17 @@ curl "http://localhost:8080/api/v1/delivery-order-price?venue_slug=home-assignme
 ```
 
 **Errors**
+Errors are normalized by global exception handling into consistent error payload
 
 - Invalid input (e.g. coordinates out of range, negative cart) → **400 Bad Request** with a short message.
 - Delivery not possible for the computed distance → **400 Bad Request**.
 - Upstream issues (e.g. unknown venue, timeout, empty body) → **404**, **400**, **502**, or **504** as mapped by the HTTP client layer.
+
+## Architecture context
+
+- `DeliveryOrderPriceController` — handles `GET /api/v1/delivery-order-price`, binds query parameters, delegates validation and pricing flow
+- `ValidationService` — input checks before business calculations
+- `GlobalExceptionHandler` — unified JSON error responses for validation/binding/unexpected errors
 
 ## Other endpoints
 
