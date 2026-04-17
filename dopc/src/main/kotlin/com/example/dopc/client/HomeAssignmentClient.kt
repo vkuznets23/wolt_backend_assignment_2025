@@ -9,9 +9,12 @@ import org.springframework.web.client.HttpServerErrorException
 import org.springframework.web.client.ResourceAccessException
 import org.springframework.web.client.RestClient
 import org.springframework.web.server.ResponseStatusException
+import org.slf4j.LoggerFactory  
+import org.springframework.http.converter.HttpMessageConversionException
 
 @Service
 class HomeAssignmentClient(builder: RestClient.Builder) {
+    private val log = LoggerFactory.getLogger(HomeAssignmentClient::class.java)
     private val webClient =
             builder.baseUrl(
                             "https://consumer-api.development.dev.woltapi.com/home-assignment-api/v1"
@@ -27,16 +30,24 @@ class HomeAssignmentClient(builder: RestClient.Builder) {
                     .body(StaticResponse::class.java) // convert response to StaticResponse object
              ?: throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Empty static response") // null body
         } catch (e: HttpClientErrorException.NotFound) {
+            log.warn("Venue not found: {}", venueSlug, e)
             throw ResponseStatusException(HttpStatus.NOT_FOUND, "Venue not found: $venueSlug") // 404
         } catch(e: HttpClientErrorException.TooManyRequests) {
+            log.warn("Upstream rate limit hit for slug={}", venueSlug, e)
             throw ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many requests") // 429
         } catch (e: HttpClientErrorException) {
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Upstream rejected request") // 400
-        } catch (e: HttpClientErrorException.BadRequest) {
-            throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Invalid upstream response format") // bad JSON/schema от upstream
+            // all other 4xx (401/403/409/422/...)
+            log.warn("Upstream returned 4xx {} for slug={}", e.statusCode, venueSlug, e)
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Upstream rejected request")
+        } catch (e: HttpMessageConversionException) {
+            // upstream returned payload that doesn't match expected schema
+            log.error("Invalid upstream response format for slug={}", venueSlug, e)
+            throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Invalid upstream response format") 
         } catch (e: HttpServerErrorException) {
+            log.error("Upstream 5xx {} for slug={}", e.statusCode, venueSlug, e)
             throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Upstream service error") // 502 external service returned an error
         } catch (e: ResourceAccessException) {
+            log.error("Upstream timeout/network error for slug={}", venueSlug, e)
             throw ResponseStatusException(HttpStatus.GATEWAY_TIMEOUT, "Upstream timeout") // 504 external service timeout
         } 
     }
@@ -53,17 +64,25 @@ class HomeAssignmentClient(builder: RestClient.Builder) {
                             "Empty dynamic response"
                     )
         } catch (e: HttpClientErrorException.NotFound) {
-            throw ResponseStatusException(HttpStatus.NOT_FOUND, "Venue not found: $venueSlug")
-        }catch(e: HttpClientErrorException.TooManyRequests) {
-            throw ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many requests")
+            log.warn("Venue not found: {}", venueSlug, e)
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "Venue not found: $venueSlug") // 404
+        } catch(e: HttpClientErrorException.TooManyRequests) {
+            log.warn("Upstream rate limit hit for slug={}", venueSlug, e)
+            throw ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many requests") // 429
         } catch (e: HttpClientErrorException) {
+            // all other 4xx (401/403/409/422/...)
+            log.warn("Upstream returned 4xx {} for slug={}", e.statusCode, venueSlug, e)
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Upstream rejected request")
-        }catch (e: HttpClientErrorException.BadRequest) {
-            throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Invalid upstream response format")
+        } catch (e: HttpMessageConversionException) {
+            // upstream returned payload that doesn't match expected schema
+            log.error("Invalid upstream response format for slug={}", venueSlug, e)
+            throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Invalid upstream response format") 
         } catch (e: HttpServerErrorException) {
-            throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Upstream service error")
+            log.error("Upstream 5xx {} for slug={}", e.statusCode, venueSlug, e)
+            throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Upstream service error") // 502 external service returned an error
         } catch (e: ResourceAccessException) {
-            throw ResponseStatusException(HttpStatus.GATEWAY_TIMEOUT, "Upstream timeout")
+            log.error("Upstream timeout/network error for slug={}", venueSlug, e)
+            throw ResponseStatusException(HttpStatus.GATEWAY_TIMEOUT, "Upstream timeout") // 504 external service timeout
         }
     }
 }

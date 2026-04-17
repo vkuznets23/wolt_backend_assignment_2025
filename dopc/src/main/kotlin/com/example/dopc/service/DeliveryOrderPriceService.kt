@@ -10,9 +10,11 @@ import com.example.dopc.utils.calculateTotalPrice
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
+import org.slf4j.LoggerFactory  
 
 @Service
 class DeliveryOrderPriceService(private val homeAssignmentClient: HomeAssignmentClient) {
+    private val log = LoggerFactory.getLogger(DeliveryOrderPriceService::class.java)
 
     fun getDeliveryOrderPrice(
             venueSlug: String,
@@ -44,10 +46,10 @@ class DeliveryOrderPriceService(private val homeAssignmentClient: HomeAssignment
         val surcharge = calculateSmallOrderSurcharge(cartValue, orderMinimumNoSurcharge)
         val deliveryFee =
                 calculateDeliveryFee(basePrice, distance, distanceRanges)
-                        ?: throw ResponseStatusException(
-                                HttpStatus.BAD_REQUEST,
-                                "Delivery is not possible for this distance"
-                        )
+                        ?: run {
+                                log.error("Delivery is not possible for this distance")
+                                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Delivery is not possible for this distance")
+                        }
 
         val total = calculateTotalPrice(cartValue, surcharge, deliveryFee)
 

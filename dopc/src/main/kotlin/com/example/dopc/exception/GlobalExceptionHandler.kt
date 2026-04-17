@@ -9,9 +9,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.server.ResponseStatusException
 import java.time.LocalDateTime
+import org.slf4j.LoggerFactory  
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
+    private val log = LoggerFactory.getLogger(GlobalExceptionHandler::class.java)
 
     @ExceptionHandler(ResponseStatusException::class)
     // when in code there is ResponseStatusException
@@ -21,6 +23,7 @@ class GlobalExceptionHandler {
         request: HttpServletRequest
     ): ResponseEntity<ErrorResponse> {
         val status = HttpStatus.valueOf(ex.statusCode.value())
+        log.error("ResponseStatusException: ${ex.statusCode.value()} ${ex.reason}", ex)
         val body = ErrorResponse(
             code = status.name,
             message = ex.reason ?: "Request failed",
@@ -38,6 +41,7 @@ class GlobalExceptionHandler {
         ex: MethodArgumentNotValidException,
         request: HttpServletRequest
     ): ResponseEntity<ErrorResponse> {
+        log.error("MethodArgumentNotValidException: ${ex.bindingResult.fieldErrors}", ex)
         val message = ex.bindingResult.fieldErrors
             .firstOrNull()
             ?.defaultMessage
@@ -60,6 +64,7 @@ class GlobalExceptionHandler {
         ex: Exception,
         request: HttpServletRequest
     ): ResponseEntity<ErrorResponse> {
+        log.error("Exception: ${ex.message}", ex)
         val body = ErrorResponse(
             code = "INTERNAL_ERROR",
             message = "Internal server error",
