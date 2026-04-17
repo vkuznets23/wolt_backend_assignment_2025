@@ -25,16 +25,20 @@ class HomeAssignmentClient(builder: RestClient.Builder) {
                     .uri("/venues/{slug}/static", venueSlug)
                     .retrieve() // send request and get response
                     .body(StaticResponse::class.java) // convert response to StaticResponse object
-             ?: throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Empty static response")
+             ?: throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Empty static response") // null body
         } catch (e: HttpClientErrorException.NotFound) {
-            throw ResponseStatusException(HttpStatus.NOT_FOUND, "Venue not found: $venueSlug")
+            throw ResponseStatusException(HttpStatus.NOT_FOUND, "Venue not found: $venueSlug") // 404
+        } catch(e: HttpClientErrorException.TooManyRequests) {
+            throw ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many requests") // 429
         } catch (e: HttpClientErrorException) {
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Upstream rejected request")
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Upstream rejected request") // 400
+        } catch (e: HttpClientErrorException.BadRequest) {
+            throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Invalid upstream response format") // bad JSON/schema от upstream
         } catch (e: HttpServerErrorException) {
-            throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Upstream service error")
+            throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Upstream service error") // 502 external service returned an error
         } catch (e: ResourceAccessException) {
-            throw ResponseStatusException(HttpStatus.GATEWAY_TIMEOUT, "Upstream timeout")
-        }
+            throw ResponseStatusException(HttpStatus.GATEWAY_TIMEOUT, "Upstream timeout") // 504 external service timeout
+        } 
     }
 
     fun fetchDynamic(venueSlug: String): DynamicResponse {
@@ -50,8 +54,12 @@ class HomeAssignmentClient(builder: RestClient.Builder) {
                     )
         } catch (e: HttpClientErrorException.NotFound) {
             throw ResponseStatusException(HttpStatus.NOT_FOUND, "Venue not found: $venueSlug")
+        }catch(e: HttpClientErrorException.TooManyRequests) {
+            throw ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many requests")
         } catch (e: HttpClientErrorException) {
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Upstream rejected request")
+        }catch (e: HttpClientErrorException.BadRequest) {
+            throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Invalid upstream response format")
         } catch (e: HttpServerErrorException) {
             throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Upstream service error")
         } catch (e: ResourceAccessException) {
