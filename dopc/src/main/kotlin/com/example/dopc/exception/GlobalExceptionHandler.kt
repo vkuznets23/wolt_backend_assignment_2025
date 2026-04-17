@@ -25,7 +25,6 @@ class GlobalExceptionHandler {
         request: HttpServletRequest
     ): ResponseEntity<ErrorResponse> {
         val status = HttpStatus.valueOf(ex.statusCode.value())
-        log.error("[ERROR HANDLER] ResponseStatusException: ${ex.statusCode.value()} ${ex.reason}", ex)
         val body = ErrorResponse(
             code = status.name,
             message = ex.reason ?: "Request failed",
@@ -41,8 +40,7 @@ class GlobalExceptionHandler {
         ex: MissingServletRequestParameterException,
         request: HttpServletRequest
     ): ResponseEntity<ErrorResponse> { 
-        val status = HttpStatus.BAD_REQUEST
-        log.error("[ERROR HANDLER] MissingServletRequestParameterException: ${ex.message}", ex)
+        log.warn("[ERROR HANDLER] MissingServletRequestParameterException: ${ex.message}")
         val body = ErrorResponse(
             code = "VALIDATION_ERROR",
             message = ex.message ?: "Validation failed",
@@ -58,8 +56,7 @@ class GlobalExceptionHandler {
         ex: MethodArgumentTypeMismatchException,
         request: HttpServletRequest
     ): ResponseEntity<ErrorResponse> { 
-        val status = HttpStatus.BAD_REQUEST
-        log.error("[ERROR HANDLER] MethodArgumentTypeMismatchException: ${ex.message}", ex)
+        log.warn("[ERROR HANDLER] MethodArgumentTypeMismatchException: ${ex.message}")
         val body = ErrorResponse(
             code = "VALIDATION_ERROR",
             message = ex.message ?: "Validation failed",
@@ -67,7 +64,8 @@ class GlobalExceptionHandler {
             path = request.requestURI,
             timestamp = LocalDateTime.now()
         )
-        return ResponseEntity.status(status).body(body) }
+        return ResponseEntity.badRequest().body(body)
+    }
 
     // when there is bean validation error (@Valid @NotBlank, @Min, @Max, etc.)
     // takes first error message and return status code and body
@@ -76,7 +74,7 @@ class GlobalExceptionHandler {
         ex: MethodArgumentNotValidException,
         request: HttpServletRequest
     ): ResponseEntity<ErrorResponse> {
-        log.error("[ERROR HANDLER] MethodArgumentNotValidException: ${ex.bindingResult.fieldErrors}", ex)
+        log.warn("[ERROR HANDLER] MethodArgumentNotValidException: ${ex.bindingResult.fieldErrors}")
         val message = ex.bindingResult.fieldErrors
             .firstOrNull()
             ?.defaultMessage
