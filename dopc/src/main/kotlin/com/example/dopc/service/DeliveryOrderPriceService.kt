@@ -27,6 +27,7 @@ class DeliveryOrderPriceService(private val homeAssignmentClient: HomeAssignment
 
         val coordinates = static.venueRaw.location.coordinates
         if (coordinates.size != 2) {
+            log.error("[SERVICE] Invalid venue coordinates format from upstream API")
             throw ResponseStatusException(
                     HttpStatus.BAD_GATEWAY,
                     "Invalid venue coordinates format from upstream API"
@@ -47,7 +48,7 @@ class DeliveryOrderPriceService(private val homeAssignmentClient: HomeAssignment
         val deliveryFee =
                 calculateDeliveryFee(basePrice, distance, distanceRanges)
                         ?: run {
-                                log.error("Delivery is not possible for this distance")
+                                log.error("[SERVICE] Delivery is not possible for this distance")
                                 throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Delivery is not possible for this distance")
                         }
 

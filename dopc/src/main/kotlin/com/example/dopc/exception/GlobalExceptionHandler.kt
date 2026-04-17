@@ -23,7 +23,7 @@ class GlobalExceptionHandler {
         request: HttpServletRequest
     ): ResponseEntity<ErrorResponse> {
         val status = HttpStatus.valueOf(ex.statusCode.value())
-        log.error("ResponseStatusException: ${ex.statusCode.value()} ${ex.reason}", ex)
+        log.error("[ERROR HANDLER] ResponseStatusException: ${ex.statusCode.value()} ${ex.reason}", ex)
         val body = ErrorResponse(
             code = status.name,
             message = ex.reason ?: "Request failed",
@@ -41,7 +41,7 @@ class GlobalExceptionHandler {
         ex: MethodArgumentNotValidException,
         request: HttpServletRequest
     ): ResponseEntity<ErrorResponse> {
-        log.error("MethodArgumentNotValidException: ${ex.bindingResult.fieldErrors}", ex)
+        log.error("[ERROR HANDLER] MethodArgumentNotValidException: ${ex.bindingResult.fieldErrors}", ex)
         val message = ex.bindingResult.fieldErrors
             .firstOrNull()
             ?.defaultMessage
@@ -64,7 +64,7 @@ class GlobalExceptionHandler {
         ex: Exception,
         request: HttpServletRequest
     ): ResponseEntity<ErrorResponse> {
-        log.error("Exception: ${ex.message}", ex)
+        log.error("[ERROR HANDLER]Exception: ${ex.message}", ex)
         val body = ErrorResponse(
             code = "INTERNAL_ERROR",
             message = "Internal server error",
