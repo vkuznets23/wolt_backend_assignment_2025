@@ -5,6 +5,9 @@ import com.example.dopc.client.dto.StaticResponse
 import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.converter.HttpMessageConversionException
+import org.springframework.retry.annotation.Backoff
+import org.springframework.retry.annotation.Recover
+import org.springframework.retry.annotation.Retryable
 import org.springframework.stereotype.Service
 import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.client.HttpServerErrorException
@@ -21,6 +24,15 @@ class HomeAssignmentClient(builder: RestClient.Builder) {
                     )
                     .build()
 
+    @Retryable(
+            retryFor =
+                    [
+                            HttpClientErrorException.TooManyRequests::class,
+                            HttpServerErrorException::class,
+                            ResourceAccessException::class],
+            maxAttempts = 3,
+            backoff = Backoff(delay = 1000, multiplier = 2.0, maxDelay = 8000)
+    )
     fun fetchStatic(venueSlug: String): StaticResponse {
         try {
             return webClient
@@ -40,7 +52,7 @@ class HomeAssignmentClient(builder: RestClient.Builder) {
             ) // 404
         } catch (e: HttpClientErrorException.TooManyRequests) {
             log.warn("[CLIENT] Upstream rate limit hit for slug={}", venueSlug, e)
-            throw ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many requests") // 429
+            throw e
         } catch (e: HttpClientErrorException) {
             // all other 4xx (401/403/409/422/...)
             log.warn("[CLIENT] Upstream returned 4xx {} for slug={}", e.statusCode, venueSlug, e)
@@ -52,21 +64,39 @@ class HomeAssignmentClient(builder: RestClient.Builder) {
                     HttpStatus.BAD_GATEWAY,
                     "Invalid upstream response format"
             )
-        } catch (e: HttpServerErrorException) {
-            log.error("[CLIENT] Upstream 5xx {} for slug={}", e.statusCode, venueSlug, e)
-            throw ResponseStatusException(
-                    HttpStatus.BAD_GATEWAY,
-                    "Upstream service error"
-            ) // 502 external service returned an error
-        } catch (e: ResourceAccessException) {
-            log.error("[CLIENT] Upstream timeout/network error for slug={}", venueSlug, e)
-            throw ResponseStatusException(
-                    HttpStatus.GATEWAY_TIMEOUT,
-                    "Upstream timeout"
-            ) // 504 external service timeout
         }
     }
 
+    @Recover
+    fun recoverStaticTooManyRequests(
+            e: HttpClientErrorException.TooManyRequests,
+            venueSlug: String
+    ): StaticResponse {
+        log.warn("[CLIENT] Upstream rate limit hit for slug={}", venueSlug, e)
+        throw ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many requests")
+    }
+
+    @Recover
+    fun recoverStatic(e: HttpServerErrorException, venueSlug: String): StaticResponse {
+        log.error("[CLIENT] All retries failed (5xx) for slug={}", venueSlug, e)
+        throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Upstream service error")
+    }
+
+    @Recover
+    fun recoverStatic(e: ResourceAccessException, venueSlug: String): StaticResponse {
+        log.error("[CLIENT] All retries failed (timeout) for slug={}", venueSlug, e)
+        throw ResponseStatusException(HttpStatus.GATEWAY_TIMEOUT, "Upstream timeout")
+    }
+
+    @Retryable(
+            retryFor =
+                    [
+                            HttpClientErrorException.TooManyRequests::class,
+                            HttpServerErrorException::class,
+                            ResourceAccessException::class],
+            maxAttempts = 3,
+            backoff = Backoff(delay = 1000, multiplier = 2.0, maxDelay = 8000)
+    )
     fun fetchDynamic(venueSlug: String): DynamicResponse {
         try {
             return webClient
@@ -86,7 +116,7 @@ class HomeAssignmentClient(builder: RestClient.Builder) {
             ) // 404
         } catch (e: HttpClientErrorException.TooManyRequests) {
             log.warn("[CLIENT] Upstream rate limit hit for slug={}", venueSlug, e)
-            throw ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many requests") // 429
+            throw e
         } catch (e: HttpClientErrorException) {
             // all other 4xx (401/403/409/422/...)
             log.warn("[CLIENT] Upstream returned 4xx {} for slug={}", e.statusCode, venueSlug, e)
@@ -98,18 +128,27 @@ class HomeAssignmentClient(builder: RestClient.Builder) {
                     HttpStatus.BAD_GATEWAY,
                     "Invalid upstream response format"
             )
-        } catch (e: HttpServerErrorException) {
-            log.error("[CLIENT] Upstream 5xx {} for slug={}", e.statusCode, venueSlug, e)
-            throw ResponseStatusException(
-                    HttpStatus.BAD_GATEWAY,
-                    "Upstream service error"
-            ) // 502 external service returned an error
-        } catch (e: ResourceAccessException) {
-            log.error("[CLIENT] Upstream timeout/network error for slug={}", venueSlug, e)
-            throw ResponseStatusException(
-                    HttpStatus.GATEWAY_TIMEOUT,
-                    "Upstream timeout"
-            ) // 504 external service timeout
         }
+    }
+
+    @Recover
+    fun recoverDynamicTooManyRequests(
+            e: HttpClientErrorException.TooManyRequests,
+            venueSlug: String
+    ): DynamicResponse {
+        log.warn("[CLIENT] Upstream rate limit hit for slug={}", venueSlug, e)
+        throw ResponseStatusException(HttpStatus.TOO_MANY_REQUESTS, "Too many requests")
+    }
+
+    @Recover
+    fun recoverDynamic(e: HttpServerErrorException, venueSlug: String): DynamicResponse {
+        log.error("[CLIENT] All retries failed (5xx) for slug={}", venueSlug, e)
+        throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Upstream service error")
+    }
+
+    @Recover
+    fun recoverDynamic(e: ResourceAccessException, venueSlug: String): DynamicResponse {
+        log.error("[CLIENT] All retries failed (timeout) for slug={}", venueSlug, e)
+        throw ResponseStatusException(HttpStatus.GATEWAY_TIMEOUT, "Upstream timeout")
     }
 }
