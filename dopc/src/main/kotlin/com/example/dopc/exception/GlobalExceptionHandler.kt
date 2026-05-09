@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.server.ResponseStatusException
+import jakarta.validation.ConstraintViolationException
+import org.springframework.retry.ExhaustedRetryException
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
@@ -110,4 +112,54 @@ class GlobalExceptionHandler {
                 )
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(body)
     }
+
+    @ExceptionHandler(ConstraintViolationException::class)
+    fun handleConstraintViolationException(
+            ex: ConstraintViolationException,
+            request: HttpServletRequest
+    ): ResponseEntity<ErrorResponse> {
+        log.warn("[ERROR HANDLER] ConstraintViolationException: ${ex.message}")
+        val message = ex.constraintViolations.firstOrNull()?.message ?: "Validation failed"
+        val body =
+                ErrorResponse(
+                        code = "VALIDATION_ERROR",
+                        message = message,
+                        status = HttpStatus.BAD_REQUEST.value(),
+                        path = request.requestURI,
+                        timestamp = Instant.now()
+                )
+        return ResponseEntity.badRequest().body(body)
+    }
+
+    // when there is exhausted retry exception
+    // returns bad gateway status code and body
+    @ExceptionHandler(ExhaustedRetryException::class)
+        fun handleExhaustedRetryException(
+        ex: ExhaustedRetryException,
+        request: HttpServletRequest
+        ): ResponseEntity<ErrorResponse> {
+        log.warn("[ERROR HANDLER] ExhaustedRetryException: ${ex.message}")
+
+        val cause = ex.cause
+        if (cause is ResponseStatusException) {
+                val status = HttpStatus.valueOf(cause.statusCode.value())
+                val body = ErrorResponse(
+                code = status.name,
+                message = cause.reason ?: "Request failed",
+                status = status.value(),
+                path = request.requestURI,
+                timestamp = Instant.now()
+                )
+                return ResponseEntity.status(status).body(body)
+        }
+
+        val body = ErrorResponse(
+                code = "RETRY_ERROR",
+                message = ex.message ?: "Retry failed",
+                status = HttpStatus.BAD_GATEWAY.value(),
+                path = request.requestURI,
+                timestamp = Instant.now()
+        )
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(body)
+        }
 }

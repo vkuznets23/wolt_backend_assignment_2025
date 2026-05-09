@@ -31,7 +31,8 @@ class HomeAssignmentClient(builder: RestClient.Builder) {
                             HttpServerErrorException::class,
                             ResourceAccessException::class],
             maxAttempts = 3,
-            backoff = Backoff(delay = 1000, multiplier = 2.0, maxDelay = 8000)
+            backoff = Backoff(delay = 1000, multiplier = 2.0, maxDelay = 8000),
+            exclude = [ResponseStatusException::class],
     )
     fun fetchStatic(venueSlug: String): StaticResponse {
         try {
@@ -95,7 +96,8 @@ class HomeAssignmentClient(builder: RestClient.Builder) {
                             HttpServerErrorException::class,
                             ResourceAccessException::class],
             maxAttempts = 3,
-            backoff = Backoff(delay = 1000, multiplier = 2.0, maxDelay = 8000)
+            backoff = Backoff(delay = 1000, multiplier = 2.0, maxDelay = 8000),
+            exclude = [ResponseStatusException::class],
     )
     fun fetchDynamic(venueSlug: String): DynamicResponse {
         try {

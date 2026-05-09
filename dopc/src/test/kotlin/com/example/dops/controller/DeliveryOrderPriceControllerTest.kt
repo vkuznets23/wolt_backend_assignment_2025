@@ -2,7 +2,6 @@ package com.example.dopc.controller
 
 import com.example.dopc.exception.GlobalExceptionHandler
 import com.example.dopc.service.DeliveryOrderPriceService
-import com.example.dopc.service.ValidationService
 import com.example.dopc.service.dto.DeliveryInfo
 import com.example.dopc.service.dto.DeliveryOrderPriceResponse
 import org.junit.jupiter.api.Test
@@ -22,7 +21,6 @@ class DeliveryOrderPriceControllerTest(
     @Autowired private val mockMvc: MockMvc
 ) {
     @MockBean lateinit var deliveryOrderPriceService: DeliveryOrderPriceService
-    @MockBean lateinit var validationService: ValidationService
 
     @Test
     fun `returns 200 when all parameters are valid`() {
