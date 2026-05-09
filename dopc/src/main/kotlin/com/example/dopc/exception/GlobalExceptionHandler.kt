@@ -130,9 +130,8 @@ class GlobalExceptionHandler {
                 )
         return ResponseEntity.badRequest().body(body)
     }
-
-    // when there is exhausted retry exception
-    // returns bad gateway status code and body
+    
+    // when retry is exhausted and recover method is not found
     @ExceptionHandler(ExhaustedRetryException::class)
         fun handleExhaustedRetryException(
         ex: ExhaustedRetryException,

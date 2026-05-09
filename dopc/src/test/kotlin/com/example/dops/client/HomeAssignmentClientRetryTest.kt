@@ -16,6 +16,8 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.client.RestClient
 import org.springframework.web.server.ResponseStatusException
+import org.springframework.web.client.ResourceAccessException
+import org.springframework.web.client.HttpServerErrorException
 
 @SpringBootTest(classes = [DopcApplication::class])
 @Import(HomeAssignmentClientRetryTest.MockConfig::class)
@@ -95,6 +97,41 @@ class HomeAssignmentClientRetryTest {
         assertEquals(HttpStatus.TOO_MANY_REQUESTS, ex.statusCode)
         assertEquals("Too many requests", ex.reason)
 
+        verify(responseSpec, times(3)).body(StaticResponse::class.java)
+    }
+
+    @Test
+    fun `retries 3 times on 5xx then returns bad gateway`() {
+        val upstream5xx = HttpServerErrorException.create(
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            "upstream error",
+            HttpHeaders.EMPTY,
+            ByteArray(0),
+            null
+        )
+
+        `when`(responseSpec.body(StaticResponse::class.java)).thenThrow(upstream5xx)
+
+        val ex = assertFailsWith<ResponseStatusException> {
+            client.fetchStatic("venue-1")
+        }
+
+        assertEquals(HttpStatus.BAD_GATEWAY, ex.statusCode)
+        assertEquals("Upstream service error", ex.reason)
+        verify(responseSpec, times(3)).body(StaticResponse::class.java)
+    }
+
+    @Test
+    fun `retries 3 times on timeout then returns gateway timeout`() {
+        `when`(responseSpec.body(StaticResponse::class.java))
+            .thenThrow(ResourceAccessException("timeout"))
+
+        val ex = assertFailsWith<ResponseStatusException> {
+            client.fetchStatic("venue-1")
+        }
+
+        assertEquals(HttpStatus.GATEWAY_TIMEOUT, ex.statusCode)
+        assertEquals("Upstream timeout", ex.reason)
         verify(responseSpec, times(3)).body(StaticResponse::class.java)
     }
 }

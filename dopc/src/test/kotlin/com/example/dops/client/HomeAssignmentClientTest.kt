@@ -13,6 +13,8 @@ import org.springframework.http.converter.HttpMessageConversionException
 import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.client.RestClient
 import org.springframework.web.server.ResponseStatusException
+import org.mockito.Mockito.times
+import org.mockito.Mockito.verify
 
 class HomeAssignmentClientTest {
 
@@ -37,7 +39,7 @@ class HomeAssignmentClientTest {
     }
 
     @Test
-    fun `maps upstream 404 to 404 NOT_FOUND`() {
+    fun `maps upstream 404 to 404 NOT_FOUND and does not retry`() {
         setUpStaticChain()
 
         val upstream404 = HttpClientErrorException.create(
@@ -58,10 +60,11 @@ class HomeAssignmentClientTest {
 
         assertEquals(HttpStatus.NOT_FOUND, ex.statusCode)
         assertEquals("Venue not found: missing-venue", ex.reason)
+        verify(responseSpec, times(1)).body(StaticResponse::class.java)
     }
 
     @Test
-    fun `maps upstream 4xx (non-404 non-429) to 400 BAD_REQUEST`() {
+    fun `maps upstream 4xx (non-404 non-429) to 400 BAD_REQUEST and does not retry`() {
         setUpStaticChain()
 
         val upstream4xx = HttpClientErrorException.create(
@@ -82,10 +85,11 @@ class HomeAssignmentClientTest {
 
         assertEquals(HttpStatus.BAD_REQUEST, ex.statusCode)
         assertEquals("Request could not be processed", ex.reason)
+        verify(responseSpec, times(1)).body(StaticResponse::class.java)
     }
 
     @Test
-    fun `maps invalid upstream payload to 502 BAD_GATEWAY`() {
+    fun `maps invalid upstream payload to 502 BAD_GATEWAY and does not retry`() {
         setUpStaticChain()
 
         `when`(responseSpec.body(StaticResponse::class.java))
@@ -99,5 +103,6 @@ class HomeAssignmentClientTest {
 
         assertEquals(HttpStatus.BAD_GATEWAY, ex.statusCode)
         assertEquals("Invalid upstream response format", ex.reason)
+        verify(responseSpec, times(1)).body(StaticResponse::class.java)
     }
 }
