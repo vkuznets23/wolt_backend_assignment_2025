@@ -2,7 +2,6 @@ package com.example.dopc.service
 
 import com.example.dopc.service.dto.DeliveryInfo
 import com.example.dopc.service.dto.DeliveryOrderPriceResponse
-import com.example.dopc.client.HomeAssignmentClient
 import com.example.dopc.utils.calculateDeliveryFee
 import com.example.dopc.utils.calculateDistance
 import com.example.dopc.utils.calculateSmallOrderSurcharge
@@ -11,9 +10,10 @@ import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
 import org.slf4j.LoggerFactory  
+import com.example.dopc.service.VenueDataCacheService
 
 @Service
-class DeliveryOrderPriceService(private val homeAssignmentClient: HomeAssignmentClient) {
+class DeliveryOrderPriceService(private val venueDataCacheService: VenueDataCacheService) {
     private val log = LoggerFactory.getLogger(DeliveryOrderPriceService::class.java)
 
     fun getDeliveryOrderPrice(
@@ -22,8 +22,8 @@ class DeliveryOrderPriceService(private val homeAssignmentClient: HomeAssignment
             userLat: Double,
             userLon: Double,
     ): DeliveryOrderPriceResponse {
-        val static = homeAssignmentClient.fetchStatic(venueSlug)
-        val dynamic = homeAssignmentClient.fetchDynamic(venueSlug)
+        val static = venueDataCacheService.getStatic(venueSlug)
+        val dynamic = venueDataCacheService.getDynamic(venueSlug)
 
         val coordinates = static.venueRaw.location.coordinates
         if (coordinates.size != 2) {

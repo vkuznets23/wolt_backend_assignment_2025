@@ -23,7 +23,7 @@ class HomeAssignmentClient(builder: RestClient.Builder) {
                             "https://consumer-api.development.dev.woltapi.com/home-assignment-api/v1"
                     )
                     .build()
-
+    
     @Retryable(
             retryFor =
                     [
@@ -88,6 +88,7 @@ class HomeAssignmentClient(builder: RestClient.Builder) {
         log.error("[CLIENT] All retries failed (timeout) for slug={}", venueSlug, e)
         throw ResponseStatusException(HttpStatus.GATEWAY_TIMEOUT, "Upstream timeout")
     }
+
 
     @Retryable(
             retryFor =
