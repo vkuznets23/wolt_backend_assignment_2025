@@ -1,6 +1,6 @@
-package com.example.dopc.api
+package com.example.dopc.service
 
-import com.example.dopc.client.HomeAssignmentApiClient
+import com.example.dopc.client.HomeAssignmentClient
 import com.example.dopc.client.dto.DeliveryPricing
 import com.example.dopc.client.dto.DeliverySpecs
 import com.example.dopc.client.dto.DistanceRange
@@ -12,6 +12,7 @@ import com.example.dopc.client.dto.VenueRawStatic
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import com.example.dopc.service.DeliveryOrderPriceService
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.`when`
@@ -19,7 +20,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.server.ResponseStatusException
 
 class DeliveryOrderPriceServiceTest {
-        private val client = mock(HomeAssignmentApiClient::class.java)
+        private val client = mock(HomeAssignmentClient::class.java)
         private val service = DeliveryOrderPriceService(client)
 
         @Test
@@ -79,48 +80,42 @@ class DeliveryOrderPriceServiceTest {
                 assertEquals(0, result.delivery.distance)
         }
 
-        @Test
-        fun `return bad request when cartValue is negative`() {
-                val ex =
-                        assertFailsWith<ResponseStatusException> {
-                                service.getDeliveryOrderPrice("venue-1", -1000, 60.17094, 24.93087)
-                        }
-                assertEquals(HttpStatus.BAD_REQUEST, ex.statusCode)
-                assertEquals("400 BAD_REQUEST \"cart_value must be >= 0\"", ex.message)
-        }
 
         @Test
-        fun `return bad request when userLat is out of range`() {
-                val ex =
-                        assertFailsWith<ResponseStatusException> {
-                                service.getDeliveryOrderPrice("venue-1", 1000, 91.0, 24.93087)
-                        }
-                assertEquals(HttpStatus.BAD_REQUEST, ex.statusCode)
-                assertEquals("400 BAD_REQUEST \"user_lat must be between -90 and 90\"", ex.message)
-        }
-
-        @Test
-        fun `return bad request when userLon is out of range`() {
-                val ex =
-                        assertFailsWith<ResponseStatusException> {
-                                service.getDeliveryOrderPrice("venue-1", 1000, 60.17094, 181.0)
-                        }
-                assertEquals(HttpStatus.BAD_REQUEST, ex.statusCode)
-                assertEquals(
-                        "400 BAD_REQUEST \"user_lon must be between -180 and 180\"",
-                        ex.message
+        fun `throws 502 when upstream coordinates size is not 2`() {
+        `when`(client.fetchStatic("slug"))
+                .thenReturn(
+                StaticResponse(
+                        VenueRawStatic(
+                        Location(listOf(24.93087, 60.17094, 60.17096)) 
+                        )
                 )
+                )
+
+        `when`(client.fetchDynamic("slug"))
+                .thenReturn(
+                DynamicResponse(
+                        VenueRawDynamic(
+                        DeliverySpecs(
+                                orderMinimumNoSurcharge = 1000,
+                                deliveryPricing = DeliveryPricing(
+                                basePrice = 190,
+                                distanceRanges = emptyList()
+                                )
+                        )
+                        )
+                )
+                )
+
+        val ex = assertFailsWith<ResponseStatusException> {
+                service.getDeliveryOrderPrice("slug", 1000, 60.17094, 24.93087)
         }
 
-        @Test
-        fun `throws bad request for blank venue slug`() {
-                val ex =
-                        assertFailsWith<ResponseStatusException> {
-                                service.getDeliveryOrderPrice("   ", 1000, 60.17094, 24.93087)
-                        }
-                assertEquals(HttpStatus.BAD_REQUEST, ex.statusCode)
-                assertEquals("400 BAD_REQUEST \"venue_slug is required\"", ex.message)
-                verifyNoInteractions(client)
+        assertEquals(HttpStatus.BAD_GATEWAY, ex.statusCode)
+        assertEquals(
+                "502 BAD_GATEWAY \"Invalid venue coordinates format from upstream API\"",
+                ex.message
+        )
         }
 
         @Test

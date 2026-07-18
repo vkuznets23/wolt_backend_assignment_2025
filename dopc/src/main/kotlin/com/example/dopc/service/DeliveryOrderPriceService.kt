@@ -1,19 +1,20 @@
-package com.example.dopc.api
+package com.example.dopc.service
 
-import com.example.dopc.api.dto.DeliveryInfo
-import com.example.dopc.api.dto.DeliveryOrderPriceResponse
-import com.example.dopc.client.HomeAssignmentApiClient
+import com.example.dopc.service.dto.DeliveryInfo
+import com.example.dopc.service.dto.DeliveryOrderPriceResponse
 import com.example.dopc.utils.calculateDeliveryFee
 import com.example.dopc.utils.calculateDistance
 import com.example.dopc.utils.calculateSmallOrderSurcharge
 import com.example.dopc.utils.calculateTotalPrice
-import com.example.dopc.utils.validateInput
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Service
 import org.springframework.web.server.ResponseStatusException
+import org.slf4j.LoggerFactory  
+import com.example.dopc.service.VenueDataCacheService
 
 @Service
-class DeliveryOrderPriceService(private val homeAssignmentApiClient: HomeAssignmentApiClient) {
+class DeliveryOrderPriceService(private val venueDataCacheService: VenueDataCacheService) {
+    private val log = LoggerFactory.getLogger(DeliveryOrderPriceService::class.java)
 
     fun getDeliveryOrderPrice(
             venueSlug: String,
@@ -21,16 +22,12 @@ class DeliveryOrderPriceService(private val homeAssignmentApiClient: HomeAssignm
             userLat: Double,
             userLon: Double,
     ): DeliveryOrderPriceResponse {
-        val validationError = validateInput(venueSlug, cartValue, userLat, userLon)
-        if (validationError != null) {
-            throw ResponseStatusException(HttpStatus.BAD_REQUEST, validationError)
-        }
-
-        val static = homeAssignmentApiClient.fetchStatic(venueSlug)
-        val dynamic = homeAssignmentApiClient.fetchDynamic(venueSlug)
+        val static = venueDataCacheService.getStatic(venueSlug)
+        val dynamic = venueDataCacheService.getDynamic(venueSlug)
 
         val coordinates = static.venueRaw.location.coordinates
         if (coordinates.size != 2) {
+            log.error("[SERVICE] Invalid venue coordinates format from upstream API")
             throw ResponseStatusException(
                     HttpStatus.BAD_GATEWAY,
                     "Invalid venue coordinates format from upstream API"
@@ -50,10 +47,10 @@ class DeliveryOrderPriceService(private val homeAssignmentApiClient: HomeAssignm
         val surcharge = calculateSmallOrderSurcharge(cartValue, orderMinimumNoSurcharge)
         val deliveryFee =
                 calculateDeliveryFee(basePrice, distance, distanceRanges)
-                        ?: throw ResponseStatusException(
-                                HttpStatus.BAD_REQUEST,
-                                "Delivery is not possible for this distance"
-                        )
+                        ?: run {
+                                log.error("[SERVICE] Delivery is not possible for this distance")
+                                throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Delivery is not possible for this distance")
+                        }
 
         val total = calculateTotalPrice(cartValue, surcharge, deliveryFee)
 
